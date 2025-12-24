@@ -21,7 +21,7 @@ class App: Application() {
 
         this.deleteDatabase(dbName)
         db = EventStore(this, dbName)
-        importer = Importer(this, scope)
+        importer = Importer(db, this, scope)
     }
 
     fun dbSize(): Long {

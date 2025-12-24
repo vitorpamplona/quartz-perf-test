@@ -6,6 +6,7 @@ import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModel
 import com.patrykandpatrick.vico.core.cartesian.data.LineCartesianLayerModel
 import com.vitorpamplona.quartz.nip01Core.core.Event
 import com.vitorpamplona.quartz.nip01Core.crypto.verify
+import com.vitorpamplona.quartz.nip01Core.store.sqlite.EventStore
 import com.vitorpamplona.quartz.nip02FollowList.ContactListEvent
 import com.vitorpamplona.quartz.nip51Lists.muteList.MuteListEvent
 import com.vitorpamplona.quartz.nip56Reports.ReportEvent
@@ -64,35 +65,13 @@ class ProgressState(
 
 @Stable
 class Importer(
+    val db: EventStore,
     val context: Context,
     val scope: CoroutineScope
 ) {
     val progressOvertime = MutableStateFlow<List<PerSecond>>(mutableListOf())
     val progress = MutableStateFlow(ProgressState())
-    val state = MutableStateFlow<ImporterState>(ImporterState.NotStarted)
-
-    val model = progressOvertime.map { points ->
-        if (points.isEmpty())
-            null
-        else {
-            val idx = points.map { it.time }
-
-            val chart1 =
-                LineCartesianLayerModel.build {
-                    series(idx, points.map { it.linesFollows })
-                    series(idx, points.map { it.linesMutes })
-                    series(idx, points.map { it.linesReports })
-                }
-
-            val chart2 =
-                LineCartesianLayerModel.build {
-                    series(idx, points.map { it.dbSize })
-                    series(idx, points.map { it.linesMB() })
-                }
-
-            CartesianChartModel(chart1, chart2)
-        }
-    }
+    val state = MutableStateFlow<ImporterState>(ImporterState.Finished(11))
 
     @OptIn(ExperimentalAtomicApi::class)
     fun import() = scope.launch {
@@ -119,7 +98,7 @@ class Importer(
 
                 event.verify()
 
-                App.instance.db.insert(event)
+                db.insert(event)
 
                 when (event) {
                     is ContactListEvent -> followsPerSec.incrementAndFetch()
