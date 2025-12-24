@@ -71,7 +71,7 @@ class Importer(
 ) {
     val progressOvertime = MutableStateFlow<List<PerSecond>>(mutableListOf())
     val progress = MutableStateFlow(ProgressState())
-    val state = MutableStateFlow<ImporterState>(ImporterState.Finished(11))
+    val state = MutableStateFlow<ImporterState>(ImporterState.NotStarted)
 
     @OptIn(ExperimentalAtomicApi::class)
     fun import() = scope.launch {
