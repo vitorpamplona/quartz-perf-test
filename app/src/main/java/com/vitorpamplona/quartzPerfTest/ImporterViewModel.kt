@@ -26,11 +26,13 @@ import kotlin.time.TimedValue
 import kotlin.time.measureTimedValue
 
 @Stable
-class ProgressViewModel(): ViewModel() {
-    val progress = App.instance.importer.progress
-    val state = App.instance.importer.state
+class ImporterViewModel(
+    val importer: Importer
+): ViewModel() {
+    val progress = importer.progress
+    val state = importer.state
 
-    val model = App.instance.importer.progressOvertime.map { points ->
+    val model = importer.progressOvertime.map { points ->
         if (points.isEmpty())
             null
         else {
@@ -45,7 +47,7 @@ class ProgressViewModel(): ViewModel() {
 
             val chart2 =
                 LineCartesianLayerModel.build {
-                    series(idx, points.map { it.dbSize })
+                    series(idx, points.map { it.sizeMB })
                     series(idx, points.map { it.linesMB() })
                 }
 
@@ -90,18 +92,22 @@ class ProgressViewModel(): ViewModel() {
     val queryTime = MutableStateFlow<TimedValue<List<ContactListEvent>>?>(null)
 
     fun import() {
-        App.instance.importer.import()
+        importer.import()
     }
+
+    val filter = Filter(
+        kinds = listOf(ContactListEvent.KIND),
+        tags = mapOf(
+            "p" to listOf("460c25e682fda7832b52d1f22d3d22b3176d972f60dcdc3212ed8c92ef85065c")
+        ),
+        limit = 10
+    )
 
     fun query() {
         viewModelScope.launch(Dispatchers.IO) {
             val result = measureTimedValue {
-                App.instance.importer.db.query<ContactListEvent>(
-                    Filter(
-                        kinds = listOf(ContactListEvent.KIND),
-                        tags = mapOf("p" to listOf("460c25e682fda7832b52d1f22d3d22b3176d972f60dcdc3212ed8c92ef85065c")),
-                        limit = 10
-                    )
+                importer.db.query<ContactListEvent>(
+                    filter
                 )
             }
 
@@ -109,3 +115,4 @@ class ProgressViewModel(): ViewModel() {
         }
     }
 }
+

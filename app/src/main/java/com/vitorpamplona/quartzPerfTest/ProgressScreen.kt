@@ -29,21 +29,36 @@ import com.vitorpamplona.quartzPerfTest.ui.theme.MyBlue
 
 @Composable
 fun ProgressScreen(
-    vm: ProgressViewModel,
+    vm: ImporterViewModel,
 ) {
-    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-        Box(Modifier.padding(innerPadding).fillMaxSize(), contentAlignment = Alignment.Center) {
-            Column(verticalArrangement = spacedBy(30.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                DisplayProcessChart(vm)
-                DisplayProcess(vm)
-                DisplayOptions(vm)
-            }
+    Scaffold(
+        modifier = Modifier.fillMaxSize()
+    ) { pad ->
+        Box(
+            modifier = Modifier
+                .padding(pad)
+                .fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            DisplayColumn(vm)
         }
     }
 }
 
 @Composable
-fun DisplayProcessChart(vm: ProgressViewModel) {
+fun DisplayColumn(vm: ImporterViewModel) {
+    Column(
+        verticalArrangement = spacedBy(30.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        DisplayProcessChart(vm)
+        DisplayProcess(vm)
+        DisplayOptions(vm)
+    }
+}
+
+@Composable
+fun DisplayProcessChart(vm: ImporterViewModel) {
     val state = vm.model.collectAsStateWithLifecycle(null)
     val model = state.value
     if (model != null) {
@@ -78,26 +93,26 @@ fun DisplayProcessChart(vm: ProgressViewModel) {
 }
 
 @Composable
-fun DisplayProcess(vm: ProgressViewModel) {
+fun DisplayProcess(vm: ImporterViewModel) {
     val pg by vm.progress.collectAsStateWithLifecycle()
 
-    if (pg.linesProcessed > 0) {
+    if (pg.impLines > 0) {
         Text("${pg.percent()}% completed")
         Text("${pg.mbImported()}MB imported")
-        Text("${pg.linesProcessed} lines processed")
-        Text("${pg.totalDbSize} MB database size")
+        Text("${pg.impLines} lines processed")
+        Text("${pg.dbSizeMB} MB database size")
     }
 }
 
 @Composable
-fun DisplayOptions(vm: ProgressViewModel) {
+fun DisplayOptions(vm: ImporterViewModel) {
     val state = vm.state.collectAsStateWithLifecycle()
     when (val st = state.value) {
-        is ImporterState.Finished -> {
-            Text("Finished in ${st.timeMins()} minutes")
+        is ImpState.Finished -> {
+            Text("Finished in ${st.mins()} minutes")
             DisplayQuery(vm)
         }
-        is ImporterState.NotStarted -> {
+        is ImpState.NotStarted -> {
             Button(vm::import) {
                 Text("Start Import")
             }
@@ -109,7 +124,7 @@ fun DisplayOptions(vm: ProgressViewModel) {
 }
 
 @Composable
-fun DisplayQuery(vm: ProgressViewModel) {
+fun DisplayQuery(vm: ImporterViewModel) {
     val queryResult = vm.queryTime.collectAsStateWithLifecycle()
     when (val st = queryResult.value) {
         null -> {

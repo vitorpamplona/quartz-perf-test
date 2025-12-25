@@ -2,7 +2,6 @@ package com.vitorpamplona.quartzPerfTest
 
 import android.app.Application
 import com.vitorpamplona.quartz.nip01Core.store.sqlite.EventStore
-import com.vitorpamplona.quartzPerfTest.Importer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -13,7 +12,9 @@ class App: Application() {
 
     lateinit var db: EventStore
     lateinit var importer: Importer
-    val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    val scope = CoroutineScope(
+        SupervisorJob() + Dispatchers.IO
+    )
 
     override fun onCreate() {
         super.onCreate()
@@ -24,17 +25,19 @@ class App: Application() {
         importer = Importer(db, this, scope)
     }
 
-    fun dbSize(): Long {
-        val file = getDatabasePath(dbName)
-        val file2 = getDatabasePath("$dbName-wal")
-        return (file.length() + file2.length()) / (1024 * 1014)
+    fun dbSizeMB(): Int {
+        val f1 = getDatabasePath(dbName)
+        val f2 = getDatabasePath("$dbName-wal")
+        val total = f1.length() + f2.length()
+        return (total / MB).toInt()
     }
 
-    fun usedMemoryMB(): Long {
-        val totalMemory = Runtime.getRuntime().totalMemory()
-        val freeMemory = Runtime.getRuntime().freeMemory()
-        val usedMemory = totalMemory - freeMemory
-        return usedMemory / (1024 * 1024)
+    fun usedMemoryMB(): Int {
+        val runtime = Runtime.getRuntime()
+        val total = runtime.totalMemory()
+        val free = runtime.freeMemory()
+        val used = total - free
+        return (used / MB).toInt()
     }
 
     override fun onTerminate() {
