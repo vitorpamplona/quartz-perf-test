@@ -95,7 +95,7 @@ class Importer(
             val reader = app.assets
                 .open("wot.jsonl")
                 .reader(Charsets.UTF_8)
-                .buffered()
+                .buffered(1024 * 1024) // 1MB
 
             reader.forEachLine { line ->
                 val event = Event.fromJson(line)
