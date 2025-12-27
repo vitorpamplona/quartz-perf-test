@@ -127,14 +127,33 @@ fun DisplayOptions(vm: ImporterViewModel) {
 fun DisplayQuery(vm: ImporterViewModel) {
     val queryResult = vm.queryTime.collectAsStateWithLifecycle()
     when (val st = queryResult.value) {
-        null -> {
+        QueryState.NotStarted -> {
             Button(vm::query) {
                 Text("Query Followers")
             }
+
+            Button(vm::vacuum) {
+                Text("Vacuum")
+            }
+
+            Button(vm::analyse) {
+                Text("Analyse")
+            }
         }
 
-        else -> {
-            Text("Query Finished with ${st.value.size} results in ${st.duration}")
+        QueryState.Running -> {
+            Text("Query Running")
+        }
+
+        is QueryState.Finished -> {
+            Text("Follows ${st.follows}")
+            Text("Follower Count ${st.followerCount}")
+            Text("Followers ${st.followers}")
+            Text("Followers Obj Loaded ${st.followersLoaded}")
+
+            Button(vm::query) {
+                Text("Query Followers Again")
+            }
         }
     }
 }

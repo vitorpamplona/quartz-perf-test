@@ -22,7 +22,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import kotlin.time.TimedValue
+import kotlin.time.Duration
 import kotlin.time.measureTimedValue
 
 @Stable
@@ -89,30 +89,81 @@ class ImporterViewModel(
             pointConnector = LineCartesianLayer.PointConnector.cubic(),
         )
 
-    val queryTime = MutableStateFlow<TimedValue<List<ContactListEvent>>?>(null)
+    val queryTime = MutableStateFlow<QueryState>(
+        QueryState.NotStarted
+    )
 
     fun import() {
         importer.import()
     }
 
-    val filter = Filter(
+    val followersFilter = Filter(
         kinds = listOf(ContactListEvent.KIND),
         tags = mapOf(
             "p" to listOf("460c25e682fda7832b52d1f22d3d22b3176d972f60dcdc3212ed8c92ef85065c")
         ),
-        limit = 10
+        limit = 500,
+    )
+
+    val followsFilter = Filter(
+        kinds = listOf(ContactListEvent.KIND),
+        authors = listOf("460c25e682fda7832b52d1f22d3d22b3176d972f60dcdc3212ed8c92ef85065c"),
     )
 
     fun query() {
         viewModelScope.launch(Dispatchers.IO) {
-            val result = measureTimedValue {
+            queryTime.tryEmit(QueryState.Running)
+
+            val follows = measureTimedValue {
                 importer.db.query<ContactListEvent>(
-                    filter
+                    followsFilter
                 )
             }
 
-            queryTime.tryEmit(result)
+            val followerCount = measureTimedValue {
+                importer.db.count(followersFilter)
+            }
+
+            val followers = measureTimedValue {
+                importer.db.query<ContactListEvent>(
+                    followersFilter
+                )
+            }
+
+            queryTime.tryEmit(
+                QueryState.Finished(
+                    follows.duration,
+                    followerCount.duration,
+                    followers.duration,
+                    followers.value.size
+                )
+            )
+        }
+    }
+
+    fun vacuum() {
+        viewModelScope.launch {
+            importer.db.store.analyse()
+        }
+    }
+
+    fun analyse() {
+        viewModelScope.launch {
+            importer.db.store.vacuum()
         }
     }
 }
 
+@Stable
+sealed interface QueryState {
+    object NotStarted : QueryState
+
+    object Running : QueryState
+
+    class Finished(
+        val follows: Duration,
+        val followerCount: Duration,
+        val followers: Duration,
+        val followersLoaded: Int
+    ) : QueryState
+}
