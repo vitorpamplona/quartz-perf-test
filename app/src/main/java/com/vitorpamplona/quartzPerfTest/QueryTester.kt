@@ -1,16 +1,25 @@
 package com.vitorpamplona.quartzPerfTest
 
+import android.database.sqlite.SQLiteDatabase
+import androidx.compose.runtime.Stable
 import com.vitorpamplona.quartz.experimental.trustedAssertions.list.tags.ProviderTypes
+import com.vitorpamplona.quartz.experimental.trustedAssertions.list.tags.ProviderTypes.followerCount
 import com.vitorpamplona.quartz.nip01Core.relay.filters.Filter
 import com.vitorpamplona.quartz.nip01Core.store.sqlite.EventStore
 import com.vitorpamplona.quartz.nip01Core.store.sqlite.RawEvent
 import com.vitorpamplona.quartz.nip02FollowList.ContactListEvent
 import com.vitorpamplona.quartz.nip56Reports.ReportEvent
 import com.vitorpamplona.quartz.utils.TimeUtils
+import com.vitorpamplona.quartzPerfTest.CombinedResult
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlin.time.TimedValue
 import kotlin.time.measureTimedValue
 
 class QueryTester(val db: EventStore) {
+    val progress = MutableStateFlow(
+        String()
+    )
+
     val followersFilter = Filter(
         kinds = listOf(ContactListEvent.KIND),
         tags = mapOf(
@@ -60,42 +69,35 @@ class QueryTester(val db: EventStore) {
         since = 1764553447, // Nov 2025
     )
 
+    fun measure(filter: Filter, db: EventStore): CombinedResult {
+        return CombinedResult(
+            count = measureTimedValue {
+                db.store.count(filter)
+            },
+            projected = measureTimedValue {
+                db.store.rawQuery(filter)
+            }
+        )
+    }
+
     fun run(): QueryResults {
-        val follows = measureTimedValue {
-            db.store.rawQuery(followsFilter)
-        }
-
-        val followerCount = measureTimedValue {
-            db.count(followersFilter)
-        }
-
-        val followers = measureTimedValue {
-            db.store.rawQuery(followersFilter)
-        }
-
-        val notifications = measureTimedValue {
-            db.store.rawQuery(notificationsFilter)
-        }
-
-        val reports = measureTimedValue {
-            db.store.rawQuery(reportsFilter)
-        }
-
-        val reportsByAnyone = measureTimedValue {
-            db.store.rawQuery(reportsByAnyoneFilter)
-        }
-
-        val ids = measureTimedValue {
-            db.store.rawQuery(idsFilter)
-        }
-
-        val followersFromLastMonth = measureTimedValue {
-            db.store.rawQuery(followersFilterByDate)
-        }
+        progress.tryEmit("Follows")
+        val follows = measure(followsFilter, db)
+        progress.tryEmit("Followers")
+        val followers = measure(followersFilter, db)
+        progress.tryEmit("Notifications")
+        val notifications = measure(notificationsFilter, db)
+        progress.tryEmit("Reports")
+        val reports = measure(reportsFilter, db)
+        progress.tryEmit("Reports By Anyone")
+        val reportsByAnyone = measure(reportsByAnyoneFilter, db)
+        progress.tryEmit("Ids")
+        val ids = measure(idsFilter, db)
+        progress.tryEmit("Followers By Date")
+        val followersFromLastMonth = measure(followersFilterByDate, db)
 
         return QueryResults(
             follows,
-            followerCount,
             followers,
             notifications,
             reports,
@@ -106,13 +108,22 @@ class QueryTester(val db: EventStore) {
     }
 }
 
+@Stable
+class CombinedResult(
+    val count: TimedValue<Int>,
+    val projected: TimedValue<List<RawEvent>>,
+) {
+    init {
+        assert(count.value == projected.value.size)
+    }
+}
+
 class QueryResults(
-    val follows: TimedValue<List<RawEvent>>,
-    val followerCount:  TimedValue<Int>,
-    val followers: TimedValue<List<RawEvent>>,
-    val notifications: TimedValue<List<RawEvent>>,
-    val reports: TimedValue<List<RawEvent>>,
-    val reportsByAnyone: TimedValue<List<RawEvent>>,
-    val ids: TimedValue<List<RawEvent>>,
-    val followersFromLastMonth: TimedValue<List<RawEvent>>,
+    val follows: CombinedResult,
+    val followers: CombinedResult,
+    val notifications: CombinedResult,
+    val reports: CombinedResult,
+    val reportsByAnyone: CombinedResult,
+    val ids: CombinedResult,
+    val followersFromLastMonth: CombinedResult,
 )

@@ -1,5 +1,6 @@
 package com.vitorpamplona.quartzPerfTest
 
+import android.R.attr.label
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Arrangement.Absolute.spacedBy
@@ -152,31 +153,25 @@ fun DisplayQuery(vm: ImporterViewModel) {
 
         QueryState.Running -> {
             Text("Query Running")
+
+            val progress by vm.queryTester.progress.collectAsStateWithLifecycle()
+            Text(progress)
         }
 
         is QueryState.Finished -> {
-            PropertyRow("Follows", st.results.follows.explain())
-            PropertyRow("Follower Count", st.results.followerCount.explain())
-            PropertyRow("Followers", st.results.followers.explain())
-            PropertyRow("Followers Last Month", st.results.followersFromLastMonth.explain())
-            PropertyRow("Notifications", st.results.notifications.explain())
-            PropertyRow("Reports", st.results.reports.explain())
-            PropertyRow("Reports By Anyone", st.results.reportsByAnyone.explain())
-            PropertyRow("Ids", st.results.ids.explain())
+            TitleRow("Records", "Count\n(ms)", "Load\n(ms)", "Query")
+            PropertyRow("Follows", st.results.follows)
+            PropertyRow("Followers", st.results.followers)
+            PropertyRow("Followers Last Month", st.results.followersFromLastMonth)
+            PropertyRow("Notifications", st.results.notifications)
+            PropertyRow("Reports", st.results.reports)
+            PropertyRow("Reports By Anyone", st.results.reportsByAnyone)
+            PropertyRow("Ids", st.results.ids)
 
             Button(vm::query) {
                 Text("Query Followers Again")
             }
         }
-    }
-}
-
-fun <T: Any> TimedValue<T>.explain(): String {
-    val time = this.duration.toString(DurationUnit.MILLISECONDS, 3)
-    return when (val me = this.value) {
-        is List<*> -> "(${me.size}) $time"
-        is Int -> "(${me}) $time"
-        else -> "(Unknown) $time"
     }
 }
 
@@ -217,5 +212,105 @@ fun PropertyRow(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+    }
+}
+
+@Composable
+fun PropertyRow(
+    label: String,
+    result: CombinedResult
+) {
+    PropertyRow(
+        count = result.count.value,
+        countTime = result.count.duration.toString(DurationUnit.MILLISECONDS, 2).dropLast(2),
+        projTime = result.projected.duration.toString(DurationUnit.MILLISECONDS, 2).dropLast(2),
+        label
+    )
+}
+
+@Composable
+fun TitleRow(
+    count: String,
+    countTime: String,
+    projTime: String,
+    label: String
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant).padding(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(text = label, fontWeight = FontWeight.Bold, modifier = Modifier.weight(0.7f))
+
+        Row (
+            modifier = Modifier.weight(1f),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = count,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(0.5f),
+                textAlign = TextAlign.End
+            )
+            Text(
+                text = countTime,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.End
+            )
+            Text(
+                text = projTime,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.End
+            )
+        }
+    }
+}
+
+@Composable
+fun PropertyRow(
+    count: Int,
+    countTime: String,
+    projTime: String,
+    label: String
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp, horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = label,
+            modifier = Modifier.weight(0.7f),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Row (
+            modifier = Modifier.weight(1f),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "$count",
+                modifier = Modifier.weight(0.5f),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.End
+            )
+            Text(
+                text = countTime,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.End
+            )
+            Text(
+                text = projTime,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.End
+            )
+        }
     }
 }
