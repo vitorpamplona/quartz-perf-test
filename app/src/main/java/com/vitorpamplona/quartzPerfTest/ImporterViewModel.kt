@@ -90,6 +90,12 @@ class ImporterViewModel(
         ImportState.NotStarted
     )
 
+    fun init() {
+        if (importer.db.store.dbSizeMB() > 100) {
+            state.tryEmit(ImportState.Finished(0))
+        }
+    }
+
     fun import() = viewModelScope.launch(Dispatchers.IO) {
         val startTime = TimeUtils.now()
         state.emit(ImportState.Running())

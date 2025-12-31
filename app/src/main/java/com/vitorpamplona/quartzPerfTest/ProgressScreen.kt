@@ -161,6 +161,7 @@ fun DisplayQuery(vm: ImporterViewModel) {
             PropertyRow("Followers Last Month", st.results.followersFromLastMonth.explain())
             PropertyRow("Notifications", st.results.notifications.explain())
             PropertyRow("Reports", st.results.reports.explain())
+            PropertyRow("Reports By Anyone", st.results.reportsByAnyone.explain())
             PropertyRow("Ids", st.results.ids.explain())
 
             Button(vm::query) {

@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.vitorpamplona.quartzPerfTest.ui.theme.SimpleTheme
@@ -25,6 +26,11 @@ class MainActivity : ComponentActivity() {
                             app().queryTester
                         )
                     }
+
+                LaunchedEffect(vm) {
+                    vm.init()
+                }
+
                 ProgressScreen(
                     vm = vm,
                 )

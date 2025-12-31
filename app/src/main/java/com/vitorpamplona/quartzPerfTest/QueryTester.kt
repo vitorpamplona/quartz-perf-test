@@ -35,6 +35,14 @@ class QueryTester(val db: EventStore) {
         limit = 500,
     )
 
+    val reportsByAnyoneFilter = Filter(
+        kinds = listOf(ReportEvent.KIND),
+        tags = mapOf(
+            "p" to listOf("460c25e682fda7832b52d1f22d3d22b3176d972f60dcdc3212ed8c92ef85065c")
+        ),
+        limit = 500,
+    )
+
     val followsFilter = Filter(
         kinds = listOf(ContactListEvent.KIND),
         authors = listOf("460c25e682fda7832b52d1f22d3d22b3176d972f60dcdc3212ed8c92ef85065c"),
@@ -73,6 +81,10 @@ class QueryTester(val db: EventStore) {
             db.store.rawQuery(reportsFilter)
         }
 
+        val reportsByAnyone = measureTimedValue {
+            db.store.rawQuery(reportsByAnyoneFilter)
+        }
+
         val ids = measureTimedValue {
             db.store.rawQuery(idsFilter)
         }
@@ -87,6 +99,7 @@ class QueryTester(val db: EventStore) {
             followers,
             notifications,
             reports,
+            reportsByAnyone,
             ids,
             followersFromLastMonth
         )
@@ -99,6 +112,7 @@ class QueryResults(
     val followers: TimedValue<List<RawEvent>>,
     val notifications: TimedValue<List<RawEvent>>,
     val reports: TimedValue<List<RawEvent>>,
+    val reportsByAnyone: TimedValue<List<RawEvent>>,
     val ids: TimedValue<List<RawEvent>>,
     val followersFromLastMonth: TimedValue<List<RawEvent>>,
 )
