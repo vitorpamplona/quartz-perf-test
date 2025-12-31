@@ -1,11 +1,18 @@
 package com.vitorpamplona.quartzPerfTest
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Arrangement.Absolute.spacedBy
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Button
+import androidx.compose.material3.Divider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -13,6 +20,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
@@ -48,7 +57,7 @@ fun ProgressScreen(
 @Composable
 fun DisplayColumn(vm: ImporterViewModel) {
     Column(
-        verticalArrangement = spacedBy(30.dp),
+        verticalArrangement = spacedBy(10.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         DisplayProcessChart(vm)
@@ -97,10 +106,10 @@ fun DisplayProcess(vm: ImporterViewModel) {
     val pg by vm.progress.collectAsStateWithLifecycle()
 
     if (pg.impLines > 0) {
-        Text("${pg.percent()}% completed")
-        Text("${pg.mbImported()}MB imported")
-        Text("${pg.impLines} lines processed")
-        Text("${pg.dbSizeMB} MB database size")
+        PropertyRow("Completed", pg.percentFmt())
+        PropertyRow("Lines Processed", pg.linesFmt())
+        PropertyRow("Imported", pg.mbImportedFmt())
+        PropertyRow("DB Size", pg.mbDbSizeFmt())
     }
 }
 
@@ -146,14 +155,55 @@ fun DisplayQuery(vm: ImporterViewModel) {
         }
 
         is QueryState.Finished -> {
-            Text("Follows ${st.follows}")
-            Text("Follower Count ${st.followerCount}")
-            Text("Followers ${st.followers}")
-            Text("Followers Obj Loaded ${st.followersLoaded}")
+            PropertyRow("Follows", st.follows.toString())
+            PropertyRow("Follower Count", st.followerCount.toString())
+            PropertyRow("Followers", st.followers.toString())
+            PropertyRow("Notifications", st.notifications.toString())
+            PropertyRow("Reports", st.reports.toString())
 
             Button(vm::query) {
                 Text("Query Followers Again")
             }
         }
+    }
+}
+
+@Composable
+fun TitleRow(
+    label: String,
+    value: String,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant).padding(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(text = value, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f), textAlign = TextAlign.End)
+        Text(text = label, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+    }
+}
+
+@Composable
+fun PropertyRow(
+    label: String,
+    value: String,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp, horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = value,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.SemiBold,
+            textAlign = TextAlign.End
+        )
+        Text(
+            text = label,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }

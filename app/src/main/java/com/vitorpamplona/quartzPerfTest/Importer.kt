@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import java.text.DecimalFormat
 import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.atomics.AtomicLong
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
@@ -57,9 +58,18 @@ class ProgressState(
     val impBytes: Long = 0,
     val dbSizeMB: Int = 0,
 ) {
-    val total = 2158366.0
+    companion object {
+        val DF = DecimalFormat("#,###")
+        const val TOTAL = 2158366.0
+    }
+
     fun mbImported() = round(impBytes/MB)
-    fun percent() = round1(100*impLines/total)
+    fun percent() = round1(100*impLines/TOTAL)
+
+    fun percentFmt() = percent().toString() + "%"
+    fun mbImportedFmt() = mbImported().toInt().toString() + " MB"
+    fun mbDbSizeFmt() = "$dbSizeMB MB"
+    fun linesFmt() = DF.format(impLines)
 }
 
 @Stable
