@@ -9,6 +9,7 @@ import com.vitorpamplona.quartz.nip51Lists.muteList.MuteListEvent
 import com.vitorpamplona.quartz.nip56Reports.ReportEvent
 import com.vitorpamplona.quartz.utils.TimeUtils
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
@@ -40,19 +41,6 @@ class PerSecond(
 }
 
 @Stable
-sealed interface ImpState {
-    object NotStarted : ImpState
-
-    class Running() : ImpState
-
-    class Finished(
-        val seconds: Long
-    ) : ImpState {
-        fun mins() = round1(seconds/60.0)
-    }
-}
-
-@Stable
 class ProgressState(
     val impLines: Int = 0,
     val impBytes: Long = 0,
@@ -76,7 +64,6 @@ class ProgressState(
 class Importer(
     val db: EventStore,
     val app: App,
-    val scope: CoroutineScope
 ) {
     val progressOvertime = MutableStateFlow(
         listOf<PerSecond>()
@@ -84,15 +71,9 @@ class Importer(
     val progress = MutableStateFlow(
         ProgressState()
     )
-    val state = MutableStateFlow<ImpState>(
-        ImpState.NotStarted
-    )
 
     @OptIn(ExperimentalAtomicApi::class)
-    fun import() = scope.launch {
-        val startTime = TimeUtils.now()
-        state.emit(ImpState.Running())
-
+    suspend fun import() = coroutineScope {
         val totalLines = AtomicInt(0)
         val totalBytes = AtomicLong(0)
 
@@ -172,11 +153,7 @@ class Importer(
         // avoids cancelling before the
         // last screen update
         delay(1000)
-        monitorJob.cancel()
 
-        val elapsed = TimeUtils.now()-startTime
-        state.emit(
-            ImpState.Finished(elapsed)
-        )
+        monitorJob.cancel()
     }
 }

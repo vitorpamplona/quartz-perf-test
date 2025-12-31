@@ -12,9 +12,7 @@ class App: Application() {
 
     lateinit var db: EventStore
     lateinit var importer: Importer
-    val scope = CoroutineScope(
-        SupervisorJob() + Dispatchers.IO
-    )
+    lateinit var queryTester: QueryTester
 
     override fun onCreate() {
         super.onCreate()
@@ -22,7 +20,8 @@ class App: Application() {
 
         this.deleteDatabase(dbName)
         db = EventStore(this, dbName)
-        importer = Importer(db, this, scope)
+        importer = Importer(db, this)
+        queryTester = QueryTester(db)
     }
 
     fun dbSizeMB(): Int {
@@ -43,7 +42,6 @@ class App: Application() {
     override fun onTerminate() {
         super.onTerminate()
         db.close()
-        scope.cancel()
     }
 
     companion object {

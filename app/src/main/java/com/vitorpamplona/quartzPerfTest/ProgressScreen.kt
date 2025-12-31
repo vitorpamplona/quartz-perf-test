@@ -9,9 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Button
-import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -35,6 +33,8 @@ import com.patrykandpatrick.vico.core.cartesian.axis.HorizontalAxis
 import com.patrykandpatrick.vico.core.cartesian.axis.VerticalAxis
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianValueFormatter
 import com.vitorpamplona.quartzPerfTest.ui.theme.MyBlue
+import kotlin.time.DurationUnit
+import kotlin.time.TimedValue
 
 @Composable
 fun ProgressScreen(
@@ -117,11 +117,11 @@ fun DisplayProcess(vm: ImporterViewModel) {
 fun DisplayOptions(vm: ImporterViewModel) {
     val state = vm.state.collectAsStateWithLifecycle()
     when (val st = state.value) {
-        is ImpState.Finished -> {
+        is ImportState.Finished -> {
             Text("Finished in ${st.mins()} minutes")
             DisplayQuery(vm)
         }
-        is ImpState.NotStarted -> {
+        is ImportState.NotStarted -> {
             Button(vm::import) {
                 Text("Start Import")
             }
@@ -155,16 +155,27 @@ fun DisplayQuery(vm: ImporterViewModel) {
         }
 
         is QueryState.Finished -> {
-            PropertyRow("Follows", st.follows.toString())
-            PropertyRow("Follower Count", st.followerCount.toString())
-            PropertyRow("Followers", st.followers.toString())
-            PropertyRow("Notifications", st.notifications.toString())
-            PropertyRow("Reports", st.reports.toString())
+            PropertyRow("Follows", st.results.follows.explain())
+            PropertyRow("Follower Count", st.results.followerCount.explain())
+            PropertyRow("Followers", st.results.followers.explain())
+            PropertyRow("Followers Last Month", st.results.followersFromLastMonth.explain())
+            PropertyRow("Notifications", st.results.notifications.explain())
+            PropertyRow("Reports", st.results.reports.explain())
+            PropertyRow("Ids", st.results.ids.explain())
 
             Button(vm::query) {
                 Text("Query Followers Again")
             }
         }
+    }
+}
+
+fun <T: Any> TimedValue<T>.explain(): String {
+    val time = this.duration.toString(DurationUnit.MILLISECONDS, 3)
+    return when (val me = this.value) {
+        is List<*> -> "(${me.size}) $time"
+        is Int -> "(${me}) $time"
+        else -> "(Unknown) $time"
     }
 }
 

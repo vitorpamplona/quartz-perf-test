@@ -22,6 +22,7 @@ class MainActivity : ComponentActivity() {
                     viewModel {
                         ImporterViewModel(
                             app().importer,
+                            app().queryTester
                         )
                     }
                 ProgressScreen(
