@@ -135,9 +135,9 @@ fun DisplayOptions(vm: ImporterViewModel) {
 
 @Composable
 fun DisplayQuery(vm: ImporterViewModel) {
-    val queryResult = vm.queryTime.collectAsStateWithLifecycle()
-    when (val st = queryResult.value) {
-        QueryState.NotStarted -> {
+    val queryResult by vm.queryTester.progress.collectAsStateWithLifecycle()
+    when (val st = queryResult) {
+        null -> {
             Button(vm::query) {
                 Text("Query Followers")
             }
@@ -151,22 +151,15 @@ fun DisplayQuery(vm: ImporterViewModel) {
             }
         }
 
-        QueryState.Running -> {
-            Text("Query Running")
-
-            val progress by vm.queryTester.progress.collectAsStateWithLifecycle()
-            Text(progress)
-        }
-
-        is QueryState.Finished -> {
-            TitleRow("Records", "Count\n(ms)", "Load\n(ms)", "Query")
-            PropertyRow("Follows", st.results.follows)
-            PropertyRow("Followers", st.results.followers)
-            PropertyRow("Followers Last Month", st.results.followersFromLastMonth)
-            PropertyRow("Notifications", st.results.notifications)
-            PropertyRow("Reports", st.results.reports)
-            PropertyRow("Reports By Anyone", st.results.reportsByAnyone)
-            PropertyRow("Ids", st.results.ids)
+        else -> {
+            TitleRow("Items", "Count\n(ms)", "Load\n(ms)", "Query")
+            PropertyRow("Follows", st.follows)
+            PropertyRow("Followers", st.followers)
+            PropertyRow("Followers Last Month", st.followersFromLastMonth)
+            PropertyRow("Notifications", st.notifications)
+            PropertyRow("Reports", st.reports)
+            PropertyRow("Reports By Anyone", st.reportsByAnyone)
+            PropertyRow("Ids", st.ids)
 
             Button(vm::query) {
                 Text("Query Followers Again")
@@ -218,21 +211,30 @@ fun PropertyRow(
 @Composable
 fun PropertyRow(
     label: String,
-    result: CombinedResult
+    result: CombinedResult?
 ) {
-    PropertyRow(
-        count = result.count.value,
-        countTime = result.count.duration.toString(DurationUnit.MILLISECONDS, 2).dropLast(2),
-        projTime = result.projected.duration.toString(DurationUnit.MILLISECONDS, 2).dropLast(2),
-        label
-    )
+    if (result != null) {
+        PropertyRow(
+            count = result.count.value,
+            countTime = result.count.duration.toString(DurationUnit.MILLISECONDS, 2).dropLast(2),
+            projTime = result.projected.duration.toString(DurationUnit.MILLISECONDS, 2).dropLast(2),
+            label
+        )
+    } else {
+        PropertyRow(
+            count = null,
+            countTime = null,
+            projTime = null,
+            label = label
+        )
+    }
 }
 
 @Composable
 fun TitleRow(
-    count: String,
-    countTime: String,
-    projTime: String,
+    count: String?,
+    countTime: String?,
+    projTime: String?,
     label: String
 ) {
     Row(
@@ -246,19 +248,19 @@ fun TitleRow(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = count,
+                text = count ?: "-",
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.weight(0.5f),
                 textAlign = TextAlign.End
             )
             Text(
-                text = countTime,
+                text = countTime ?: "-",
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.End
             )
             Text(
-                text = projTime,
+                text = projTime ?: "-",
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.End
@@ -269,9 +271,9 @@ fun TitleRow(
 
 @Composable
 fun PropertyRow(
-    count: Int,
-    countTime: String,
-    projTime: String,
+    count: Int?,
+    countTime: String?,
+    projTime: String?,
     label: String
 ) {
     Row(
@@ -291,21 +293,21 @@ fun PropertyRow(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "$count",
+                text = count?.toString() ?: "-",
                 modifier = Modifier.weight(0.5f),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
                 textAlign = TextAlign.End
             )
             Text(
-                text = countTime,
+                text = countTime ?: "-",
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
                 textAlign = TextAlign.End
             )
             Text(
-                text = projTime,
+                text = projTime ?: "-",
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,

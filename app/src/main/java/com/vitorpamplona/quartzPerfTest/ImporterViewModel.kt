@@ -15,6 +15,7 @@ import com.vitorpamplona.quartz.utils.TimeUtils
 import com.vitorpamplona.quartzPerfTest.ui.theme.MyBlue
 import com.vitorpamplona.quartzPerfTest.ui.theme.MyCyan
 import com.vitorpamplona.quartzPerfTest.ui.theme.MyGreen
+import com.vitorpamplona.quartzPerfTest.ui.theme.MyLightGreen
 import com.vitorpamplona.quartzPerfTest.ui.theme.MyRed
 import com.vitorpamplona.quartzPerfTest.ui.theme.MyYellow
 import kotlinx.coroutines.Dispatchers
@@ -40,6 +41,8 @@ class ImporterViewModel(
                     series(idx, points.map { it.linesFollows })
                     series(idx, points.map { it.linesMutes })
                     series(idx, points.map { it.linesReports })
+                    // no need to add tags since they just follow the size db.
+                    //series(idx, points.map { it.tags })
                 }
 
             val chart2 =
@@ -59,6 +62,7 @@ class ImporterViewModel(
                     makeLine(MyGreen),
                     makeLine(MyYellow),
                     makeLine(MyRed),
+                    //makeLine(MyLightGreen),
                 ),
                 verticalAxisPosition = Axis.Position.Vertical.Start,
             ),
@@ -115,10 +119,10 @@ class ImporterViewModel(
     fun query() = viewModelScope.launch(Dispatchers.IO) {
         queryTime.tryEmit(QueryState.Running)
 
-        val results = queryTester.run()
+        queryTester.run()
 
         queryTime.tryEmit(
-            QueryState.Finished(results)
+            QueryState.Finished()
         )
     }
 
@@ -137,7 +141,7 @@ sealed interface QueryState {
 
     object Running : QueryState
 
-    class Finished(val results: QueryResults) : QueryState
+    class Finished() : QueryState
 }
 
 @Stable

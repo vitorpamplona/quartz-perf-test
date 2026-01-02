@@ -34,6 +34,7 @@ class PerSecond(
     val linesFollows: Int = 0,
     val linesMutes: Int = 0,
     val linesReports: Int = 0,
+    val tags: Int = 0,
     val linesBytes: Int = 0,
     val sizeMB: Int = 0,
 ) {
@@ -81,6 +82,7 @@ class Importer(
         val mutesPerSec = AtomicInt(0)
         val reportsPerSec = AtomicInt(0)
         val bytesPerSec = AtomicInt(0)
+        val tagsPerSec = AtomicInt(0)
 
         val computeJob = launch {
             val reader = app.assets
@@ -101,6 +103,9 @@ class Importer(
                     is ReportEvent -> reportsPerSec.incrementAndFetch()
                 }
 
+                tagsPerSec.update {
+                    it + event.tags.size
+                }
                 bytesPerSec.update {
                     it + line.length
                 }
@@ -123,6 +128,7 @@ class Importer(
                     linesMutes = mutesPerSec.fetchAndUpdate { 0 },
                     linesReports = reportsPerSec.fetchAndUpdate { 0 },
                     linesBytes = bytesPerSec.fetchAndUpdate { 0 },
+                    tags = tagsPerSec.fetchAndUpdate { 0 },
                     sizeMB = currSize - pastSize
                 )
 

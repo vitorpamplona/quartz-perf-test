@@ -1,24 +1,22 @@
 package com.vitorpamplona.quartzPerfTest
 
-import android.database.sqlite.SQLiteDatabase
 import androidx.compose.runtime.Stable
-import com.vitorpamplona.quartz.experimental.trustedAssertions.list.tags.ProviderTypes
-import com.vitorpamplona.quartz.experimental.trustedAssertions.list.tags.ProviderTypes.followerCount
 import com.vitorpamplona.quartz.nip01Core.relay.filters.Filter
 import com.vitorpamplona.quartz.nip01Core.store.sqlite.EventStore
 import com.vitorpamplona.quartz.nip01Core.store.sqlite.RawEvent
 import com.vitorpamplona.quartz.nip02FollowList.ContactListEvent
+import com.vitorpamplona.quartz.nip10Notes.TextNoteEvent
+import com.vitorpamplona.quartz.nip18Reposts.GenericRepostEvent
+import com.vitorpamplona.quartz.nip18Reposts.RepostEvent
+import com.vitorpamplona.quartz.nip25Reactions.ReactionEvent
 import com.vitorpamplona.quartz.nip56Reports.ReportEvent
-import com.vitorpamplona.quartz.utils.TimeUtils
-import com.vitorpamplona.quartzPerfTest.CombinedResult
+import com.vitorpamplona.quartz.nip57Zaps.LnZapEvent
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlin.time.TimedValue
 import kotlin.time.measureTimedValue
 
 class QueryTester(val db: EventStore) {
-    val progress = MutableStateFlow(
-        String()
-    )
+    val progress = MutableStateFlow<QueryResults?>(null)
 
     val followersFilter = Filter(
         kinds = listOf(ContactListEvent.KIND),
@@ -29,6 +27,14 @@ class QueryTester(val db: EventStore) {
     )
 
     val notificationsFilter = Filter(
+        kinds = listOf(
+            TextNoteEvent.KIND,
+            ReactionEvent.KIND,
+            RepostEvent.KIND,
+            GenericRepostEvent.KIND,
+            LnZapEvent.KIND,
+            ContactListEvent.KIND,
+        ),
         tags = mapOf(
             "p" to listOf("460c25e682fda7832b52d1f22d3d22b3176d972f60dcdc3212ed8c92ef85065c")
         ),
@@ -80,31 +86,37 @@ class QueryTester(val db: EventStore) {
         )
     }
 
-    fun run(): QueryResults {
-        progress.tryEmit("Follows")
-        val follows = measure(followsFilter, db)
-        progress.tryEmit("Followers")
-        val followers = measure(followersFilter, db)
-        progress.tryEmit("Notifications")
-        val notifications = measure(notificationsFilter, db)
-        progress.tryEmit("Reports")
-        val reports = measure(reportsFilter, db)
-        progress.tryEmit("Reports By Anyone")
-        val reportsByAnyone = measure(reportsByAnyoneFilter, db)
-        progress.tryEmit("Ids")
-        val ids = measure(idsFilter, db)
-        progress.tryEmit("Followers By Date")
-        val followersFromLastMonth = measure(followersFilterByDate, db)
-
-        return QueryResults(
-            follows,
-            followers,
-            notifications,
-            reports,
-            reportsByAnyone,
-            ids,
-            followersFromLastMonth
+    suspend fun run() {
+        var result = QueryResults()
+        progress.emit(result)
+        result = result.copy(
+            follows = measure(followsFilter, db)
         )
+        progress.emit(result)
+        result = result.copy(
+            followers = measure(followersFilter, db)
+        )
+        progress.emit(result)
+        result = result.copy(
+            followersFromLastMonth = measure(followersFilterByDate, db)
+        )
+        progress.emit(result)
+        result = result.copy(
+            notifications = measure(notificationsFilter, db)
+        )
+        progress.emit(result)
+        result = result.copy(
+            reports = measure(reportsFilter, db)
+        )
+        progress.emit(result)
+        result = result.copy(
+            reportsByAnyone = measure(reportsByAnyoneFilter, db)
+        )
+        progress.emit(result)
+        result = result.copy(
+            ids = measure(idsFilter, db)
+        )
+        progress.emit(result)
     }
 }
 
@@ -118,12 +130,12 @@ class CombinedResult(
     }
 }
 
-class QueryResults(
-    val follows: CombinedResult,
-    val followers: CombinedResult,
-    val notifications: CombinedResult,
-    val reports: CombinedResult,
-    val reportsByAnyone: CombinedResult,
-    val ids: CombinedResult,
-    val followersFromLastMonth: CombinedResult,
+data class QueryResults(
+    val follows: CombinedResult? = null,
+    val followers: CombinedResult? = null,
+    val notifications: CombinedResult? = null,
+    val reports: CombinedResult? = null,
+    val reportsByAnyone: CombinedResult? = null,
+    val ids: CombinedResult? = null,
+    val followersFromLastMonth: CombinedResult? = null,
 )
